@@ -52,7 +52,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
       && rm -rf mpiP-3.4.1/
 
     mkdir /usr/local/pbd-prof
-    R -e "remotes::install_github('RBigData/pbdPROF', lib=/usr/local/pbd-prof, configure.args='--with-mpiP=\"/opt/mpiP/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes', lib='${PROF_LIB_DIR}');"
+    R -e "remotes::install_github('RBigData/pbdPROF', lib=/usr/local/pbd-prof, configure.args='--with-mpiP=\"/opt/mpiP/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes', lib='/usr/local/pbd-prof');"
     #R -e "remotes::install_github('RBigData/pbdPROF', configure.args='--with-mpiP=\"${MPIP_LIB_DIR}/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes');"
 
     echo "alias R='R --no-save --quiet'" >> /etc/bash.bashrc
