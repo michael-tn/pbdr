@@ -42,17 +42,17 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     "
 
     cd /tmp                                                                    \
-      && wget https://github.com/LLNL/mpiP/archive/${MPIP_VERSION}.tar.gz          \
-      && tar zxf ${MPIP_VERSION}.tar.gz                                            \
-      && cd mpiP-${MPIP_VERSION}                                                   \
+      && wget https://github.com/LLNL/mpiP/archive/3.4.1.tar.gz          \
+      && tar zxf 3.4.1.tar.gz                                            \
+      && cd mpiP-3.4.1                                                   \
       && sed -i -e 's/os[.]environ\["LOGNAME"\]/\"pbdR\"/' make-wrappers.py \
-      && CC="mpicc -fPIC" ./configure --disable-libunwind --prefix=${MPIP_LIB_DIR} \
+      && CC="mpicc -fPIC" ./configure --disable-libunwind --prefix=/opt/mpiP \
       && make                                                                      \
       && make install                                                              \
-      && rm -rf mpiP-${MPIP_VERSION}/
+      && rm -rf mpiP-3.4.1/
 
-    mkdir ${PROF_LIB_DIR}
-    R -e "remotes::install_github('RBigData/pbdPROF', lib='${PROF_LIB_DIR}', configure.args='--with-mpiP=\"${MPIP_LIB_DIR}/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes', lib='${PROF_LIB_DIR}');"
+    mkdir /usr/local/pbd-prof
+    R -e "remotes::install_github('RBigData/pbdPROF', lib=/usr/local/pbd-prof, configure.args='--with-mpiP=\"/opt/mpiP/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes', lib='${PROF_LIB_DIR}');"
     #R -e "remotes::install_github('RBigData/pbdPROF', configure.args='--with-mpiP=\"${MPIP_LIB_DIR}/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes');"
 
     echo "alias R='R --no-save --quiet'" >> /etc/bash.bashrc
