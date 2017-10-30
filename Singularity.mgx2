@@ -1,0 +1,75 @@
+# Copyright (c) 2015-2016, Gregory M. Kurtzer. All rights reserved.
+# 
+# "Singularity" Copyright (c) 2016, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of any
+# required approvals from the U.S. Dept. of Energy).  All rights reserved.
+
+BootStrap: debootstrap
+OSVersion: xenial
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%environment
+    COLOROUT_VERSION=1.1-2
+    MPIP_VERSION=3.4.1
+    MPIP_LIB_DIR=/opt/mpiP
+    PROF_LIB_DIR=/usr/local/pbd-prof
+    export COLOROUT_VERSION MPIP_VERSION MPIP_LIB_DIR PROF_LIB_DIR
+
+
+%runscript
+    echo "This is what happens when you run the container..."
+
+
+%post
+    echo "Hello from inside the container"
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    apt update
+    apt -y --allow-unauthenticated install vim build-essential wget python ssh libopenblas-dev libopenmpi-dev libnetcdf-dev
+    apt -y --allow-unauthenticated install r-base
+
+    R -e "install.packages(c('rlecuyer', 'remotes', 'curl', 'data.table'), repos='https://cran.rstudio.com/', dependencies='Imports')"
+
+    cd /tmp && wget https://github.com/jalvesaq/colorout/releases/download/v1.2-2/colorout_1.1-2.tar.gz && tar zxf colorout_1.1-2.tar.gz && R CMD INSTALL colorout/ && rm colorout_1.1-2.tar.gz && rm -rf colorout/
+    R -e "                                        \
+      remotes::install_github('RBigData/pbdMPI')    ; \
+      remotes::install_github('RBigData/pbdSLAP')   ; \
+      remotes::install_github('RBigData/pbdBASE')   ; \
+      remotes::install_github('RBigData/pbdDMAT')   ; \
+      remotes::install_github('RBigData/pbdML')     ; \
+      remotes::install_github('RBigData/pmclust')   ; \
+      remotes::install_github('RBigData/pbdNCDF4')  ; \
+      remotes::install_github('RBigData/pbdIO')     ; \
+    "
+
+    cd /tmp                                                                    \
+      && wget https://github.com/LLNL/mpiP/archive/3.4.1.tar.gz          \
+      && tar zxf 3.4.1.tar.gz                                            \
+      && cd mpiP-3.4.1                                                   \
+      && sed -i -e 's/os[.]environ\["LOGNAME"\]/\"pbdR\"/' make-wrappers.py \
+      && CC="mpicc -fPIC" ./configure --disable-libunwind --prefix=/opt/mpiP \
+      && make                                                                      \
+      && make install                                                              \
+      && rm -rf mpiP-3.4.1/
+
+    mkdir ${PROF_LIB_DIR}
+    R -e "remotes::install_github('RBigData/pbdPROF', lib='${PROF_LIB_DIR}', configure.args='--with-mpiP=\"${MPIP_LIB_DIR}/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes', lib='${PROF_LIB_DIR}');"
+    #mkdir /usr/local/pbd-prof
+    #R -e "remotes::install_github('RBigData/pbdPROF', lib=/usr/local/pbd-prof, configure.args='--with-mpiP="/opt/mpiP/lib/libmpiP.a"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes', lib='/usr/local/pbd-prof');"
+    #R -e "remotes::install_github('RBigData/pbdPROF', configure.args='--with-mpiP=\"${MPIP_LIB_DIR}/lib/libmpiP.a\"') ; remotes::install_github('RBigData/pbdMPI', configure.args='--enable-pbdPROF=yes');"
+
+    echo "alias R='R --no-save --quiet'" >> /etc/bash.bashrc
+
+    echo "options(repos=structure(c(CRAN='https://cran.rstudio.com/'))) ; \
+      utils::rc.settings(ipck=TRUE);                                          \
+      library(colorout);                                                      \
+      " > /usr/lib/R/etc/Rprofile.site
+
+    update-alternatives --set libblas.so.3 /usr/lib/openblas-base/libblas.so.3
+
+
+
+     rm -rf /tmp/*
+     apt-get remove -y --purge python wget
+     apt-get autoremove -y
+     apt-get autoclean
+
